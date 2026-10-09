@@ -8,9 +8,13 @@ function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [deletingId, setDeletingId] = useState(null);
   const [deleteError, setDeleteError] = useState('');
+  const [editingApplication, setEditingApplication] = useState(null);
+  const [saveMessage, setSaveMessage] = useState('');
 
   useEffect(() => {
     async function loadApplications() {
+      setError('');
+
       try {
         const response = await fetch(
           'http://localhost:5000/api/applications'
@@ -71,8 +75,21 @@ function App() {
       <h1>Internship Application Tracker</h1>
 
       <AddApplication
-        onAdded={() => setRefreshKey((previous) => previous + 1)}
+        key={editingApplication?.application_id ?? 'new'}
+        application={editingApplication}
+        onCancel={() => setEditingApplication(null)}
+        onAdded={() => {
+          setSaveMessage(
+            editingApplication
+              ? 'Application updated successfully!'
+              : 'Application added successfully!'
+          );
+          setEditingApplication(null);
+          setRefreshKey(previous => previous + 1);
+        }}
       />
+
+      {saveMessage && <p role="status">{saveMessage}</p>}
 
       {deleteError && <p role="alert">{deleteError}</p>}
 
@@ -108,10 +125,25 @@ function App() {
                   <td>
                     <button
                       type="button"
-                      onClick={() => handleDelete(application)}
-                      disabled={deletingId !== null}
+                      onClick={() => {
+                        setSaveMessage('');
+                        setEditingApplication(application);
+                      }}
+                      disabled={deletingId !== null || editingApplication !== null}
                     >
-                      {deletingId === application.application_id ? 'Deleting...' : 'Delete'}
+                      Edit
+                    </button>
+
+                    {' '}
+
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(application)}
+                      disabled={deletingId !== null || editingApplication !== null}
+                    >
+                      {deletingId === application.application_id
+                        ? 'Deleting...'
+                        : 'Delete'}
                     </button>
                   </td>
                 </tr>

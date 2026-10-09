@@ -17,6 +17,8 @@ app.get('/api/applications', async (req, res) => {
     const [rows] = await pool.execute(`
       SELECT
         a.application_id,
+        a.company_id,
+        a.status_id,
         c.name AS company,
         a.role_title,
         a.location,
@@ -159,6 +161,115 @@ app.delete('/api/applications/:id', async (req, res) => {
   } catch (error) {
     console.error('Failed to delete application:', error.message);
     res.status(500).json({ error: 'Could not delete application.' });
+  }
+});
+
+app.put('/api/applications/:id', async (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid application ID.' });
+  }
+
+  const {
+    company_id,
+    status_id,
+    role_title,
+    location,
+    application_date
+  } = req.body || {};
+
+  const companyId = Number(company_id);
+  const statusId = Number(status_id);
+
+  if (
+    !Number.isSafeInteger(companyId) || companyId <= 0 ||
+    !Number.isSafeInteger(statusId) || statusId <= 0 ||
+    typeof role_title !== 'string' ||
+    !role_title.trim() ||
+    role_title.trim().length > 150
+  ) {
+    return res.status(400).json({
+      error: 'Provide a valid company, status, and role title (1–150 characters).'
+    });
+  }
+
+  if (
+    location != null &&
+    (typeof location !== 'string' || location.trim().length > 150)
+  ) {
+    return res.status(400).json({
+      error: 'Location must be text with at most 150 characters.'
+    });
+  }
+
+  if (
+    typeof application_date !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(application_date) ||
+    application_date < '1000-01-01'
+  ) {
+    return res.status(400).json({
+      error: 'Provide a valid application date in YYYY-MM-DD format.'
+    });
+  }
+
+  const parsedDate = new Date(`${application_date}T00:00:00Z`);
+
+  if (
+    Number.isNaN(parsedDate.getTime()) ||
+    parsedDate.toISOString().slice(0, 10) !== application_date
+  ) {
+    return res.status(400).json({
+      error: 'Provide a valid application date in YYYY-MM-DD format.'
+    });
+  }
+
+  try {
+    const [result] = await pool.execute(
+      `UPDATE applications
+       SET company_id = ?,
+           status_id = ?,
+           role_title = ?,
+           location = ?,
+           application_date = ?
+       WHERE application_id = ?`,
+      [
+        companyId,
+        statusId,
+        role_title.trim(),
+        location?.trim() || null,
+        application_date,
+        id
+      ]
+    );
+
+    // A save with unchanged values should still succeed.
+    if (result.affectedRows === 0) {
+      const [rows] = await pool.execute(
+        'SELECT application_id FROM applications WHERE application_id = ?',
+        [id]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({
+          error: 'Application not found.'
+        });
+      }
+    }
+
+    res.json({ message: 'Application updated successfully.' });
+  } catch (error) {
+    console.error('Failed to update application:', error.message);
+
+    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+      return res.status(400).json({
+        error: 'The selected company or status does not exist.'
+      });
+    }
+
+    res.status(500).json({
+      error: 'Could not update application.'
+    });
   }
 });
 

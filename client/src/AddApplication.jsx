@@ -10,10 +10,26 @@ const emptyForm = {
   application_date: ''
 };
 
-export default function AddApplication({ onAdded }) {
+export default function AddApplication({
+  onAdded,
+  application = null,
+  onCancel
+}) {
   const [companies, setCompanies] = useState([]);
   const [statuses, setStatuses] = useState([]);
-  const [form, setForm] = useState(emptyForm);
+  const isEditing = application !== null;
+
+  const [form, setForm] = useState(() =>
+    application
+      ? {
+          company_id: String(application.company_id),
+          status_id: String(application.status_id),
+          role_title: application.role_title,
+          location: application.location || '',
+          application_date: application.application_date
+        }
+      : { ...emptyForm }
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [optionsError, setOptionsError] = useState('');
@@ -58,8 +74,12 @@ export default function AddApplication({ onAdded }) {
     setMessage('');
 
     try {
-      const response = await fetch(`${API}/applications`, {
-        method: 'POST',
+      const url = isEditing
+        ? `${API}/applications/${application.application_id}`
+        : `${API}/applications`;
+
+      const response = await fetch(url, {
+        method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
@@ -71,11 +91,14 @@ export default function AddApplication({ onAdded }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Could not add application.');
+        throw new Error(data.error || 'Could not save application.');
       }
 
-      setForm({ ...emptyForm });
-      setMessage('Application added successfully!');
+      if (!isEditing) {
+        setForm({ ...emptyForm });
+        setMessage('Application added successfully!');
+      }
+
       onAdded();
     } catch (err) {
       setError(err.message);
@@ -93,7 +116,7 @@ export default function AddApplication({ onAdded }) {
 
   return (
     <section>
-      <h2>Add Application</h2>
+      <h2>{isEditing ? 'Edit Application' : 'Add Application'}</h2>
 
       <form onSubmit={handleSubmit}>
         <fieldset disabled={saving} style={{ display: 'grid', gap: '12px' }}>
@@ -168,8 +191,18 @@ export default function AddApplication({ onAdded }) {
           </label>
 
           <button type="submit">
-            {saving ? 'Saving...' : 'Add Application'}
+            {saving
+              ? 'Saving...'
+              : isEditing
+                ? 'Save Changes'
+                : 'Add Application'}
           </button>
+
+          {isEditing && (
+            <button type="button" onClick={onCancel}>
+              Cancel
+            </button>
+          )}
         </fieldset>
       </form>
 
