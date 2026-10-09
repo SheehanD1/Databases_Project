@@ -138,6 +138,30 @@ app.post('/api/applications', async (req, res) => {
   }
 });
 
+app.delete('/api/applications/:id', async (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid application ID.' });
+  }
+
+  try {
+    const [result] = await pool.execute(
+      'DELETE FROM applications WHERE application_id = ?',
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Application not found.' });
+    }
+
+    res.json({ message: 'Application deleted successfully.' });
+  } catch (error) {
+    console.error('Failed to delete application:', error.message);
+    res.status(500).json({ error: 'Could not delete application.' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
 });
