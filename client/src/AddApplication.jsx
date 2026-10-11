@@ -34,7 +34,6 @@ export default function AddApplication({
   const [saving, setSaving] = useState(false);
   const [optionsError, setOptionsError] = useState('');
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
 
   useEffect(() => {
     async function loadOptions() {
@@ -71,7 +70,6 @@ export default function AddApplication({
 
     setSaving(true);
     setError('');
-    setMessage('');
 
     try {
       const url = isEditing
@@ -96,7 +94,6 @@ export default function AddApplication({
 
       if (!isEditing) {
         setForm({ ...emptyForm });
-        setMessage('Application added successfully!');
       }
 
       onAdded();
@@ -108,7 +105,18 @@ export default function AddApplication({
   }
 
   if (loading) return <p>Loading form options...</p>;
-  if (optionsError) return <p role="alert">{optionsError}</p>;
+  if (optionsError) {
+    return (
+      <p role="alert">
+        {optionsError}{' '}
+        {isEditing && (
+          <button type="button" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+      </p>
+    );
+  }
 
   if (!companies.length || !statuses.length) {
     return <p>Add companies and statuses to the database first.</p>;
@@ -207,7 +215,6 @@ export default function AddApplication({
       </form>
 
       {error && <p role="alert">{error}</p>}
-      {message && <p role="status">{message}</p>}
     </section>
   );
 }
