@@ -119,7 +119,16 @@ export default function AddApplication({
   }
 
   if (!companies.length || !statuses.length) {
-    return <p>Add companies and statuses to the database first.</p>;
+    return (
+      <p>
+        Add companies and statuses to the database first.{' '}
+        {isEditing && (
+          <button type="button" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+      </p>
+    );
   }
 
   return (

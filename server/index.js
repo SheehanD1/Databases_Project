@@ -273,6 +273,139 @@ app.put('/api/applications/:id', async (req, res) => {
   }
 });
 
+app.get('/api/reports/applications', async (req, res) => {
+  const conditions = [];
+  const values = [];
+
+  for (const field of ['company_id', 'status_id']) {
+    const value = req.query[field];
+
+    if (value === undefined || value === '') continue;
+
+    if (
+      typeof value !== 'string' ||
+      !/^[1-9]\d*$/.test(value) ||
+      !Number.isSafeInteger(Number(value))
+    ) {
+      return res.status(400).json({
+        error: `Invalid ${field}.`
+      });
+    }
+
+    // field comes only from the fixed list above.
+    conditions.push(`a.${field} = ?`);
+    values.push(Number(value));
+  }
+
+  const dates = {};
+
+  for (const field of ['start_date', 'end_date']) {
+    const value = req.query[field];
+
+    if (value === undefined || value === '') continue;
+
+    if (
+      typeof value !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(value) ||
+      value < '1000-01-01'
+    ) {
+      return res.status(400).json({
+        error: `Invalid ${field}; use YYYY-MM-DD.`
+      });
+    }
+
+    const parsed = new Date(`${value}T00:00:00Z`);
+
+    if (
+      Number.isNaN(parsed.getTime()) ||
+      parsed.toISOString().slice(0, 10) !== value
+    ) {
+      return res.status(400).json({
+        error: `Invalid ${field}.`
+      });
+    }
+
+    dates[field] = value;
+  }
+
+  if (
+    dates.start_date &&
+    dates.end_date &&
+    dates.start_date > dates.end_date
+  ) {
+    return res.status(400).json({
+      error: 'Start date must be on or before end date.'
+    });
+  }
+
+  if (dates.start_date) {
+    conditions.push('a.application_date >= ?');
+    values.push(dates.start_date);
+  }
+
+  if (dates.end_date) {
+    conditions.push('a.application_date <= ?');
+    values.push(dates.end_date);
+  }
+
+  const where = conditions.length
+    ? `WHERE ${conditions.join(' AND ')}`
+    : '';
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT
+         a.application_id,
+         c.name AS company,
+         a.role_title,
+         a.location,
+         s.status_id,
+         s.name AS status,
+         a.application_date,
+         COUNT(*) OVER () AS total_matches,
+         COUNT(*) OVER (
+           PARTITION BY s.status_id
+         ) AS status_count
+       FROM applications AS a
+       JOIN companies AS c ON a.company_id = c.company_id
+       JOIN statuses AS s ON a.status_id = s.status_id
+       ${where}
+       ORDER BY a.application_date DESC, a.application_id DESC`,
+      values
+    );
+
+    const statusCounts = new Map();
+
+    for (const row of rows) {
+      statusCounts.set(row.status_id, {
+        status_id: row.status_id,
+        status: row.status,
+        count: Number(row.status_count)
+      });
+    }
+
+    res.json({
+      total: rows.length ? Number(rows[0].total_matches) : 0,
+      by_status: [...statusCounts.values()].sort(
+        (a, b) => a.status_id - b.status_id
+      ),
+      applications: rows.map(row => ({
+        application_id: row.application_id,
+        company: row.company,
+        role_title: row.role_title,
+        location: row.location,
+        status: row.status,
+        application_date: row.application_date
+      }))
+    });
+  } catch (error) {
+    console.error('Failed to load report:', error.message);
+    res.status(500).json({
+      error: 'Could not load application report.'
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
 });

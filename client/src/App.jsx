@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import AddApplication from './AddApplication';
+import ApplicationReport from './ApplicationReport';
 
 function App() {
   const [applications, setApplications] = useState([]);
@@ -63,6 +64,7 @@ function App() {
           (item) => item.application_id !== application.application_id
         )
       );
+      setRefreshKey(previous => previous + 1);
     } catch (err) {
       setDeleteError(err.message);
     } finally {
@@ -152,6 +154,8 @@ function App() {
           </table>
         </>
       )}
+
+      <ApplicationReport refreshKey={refreshKey} />
     </main>
   );
 }
