@@ -36,8 +36,7 @@ SOURCE C:/CS348/cs348project/server/schema.sql;
 SOURCE C:/CS348/cs348project/server/seed.sql;
 ```
 
-`SOURCE` only works at the interactive `mysql>` prompt. To run the files
-without opening the client, pipe them in instead:
+To run the files without opening the client, pipe them in instead:
 
 ```powershell
 Get-Content server\schema.sql -Raw | & "C:\Program Files\MySQL\MySQL Server 26.7\bin\mysql.exe" -u root -p
@@ -49,10 +48,13 @@ Get-Content server\schema.sql -Raw | & "C:\Program Files\MySQL\MySQL Server 26.7
 cd server
 npm install
 cp .env.example .env   # PowerShell: Copy-Item .env.example .env
-node index.js
 ```
 
-Then fill in your MySQL password in the new `.env`.
+Fill in your MySQL password in the new `.env`, then start the server:
+
+```bash
+node index.js
+```
 
 Runs on http://localhost:5000
 
@@ -78,3 +80,18 @@ Open the URL Vite prints (usually http://localhost:5173).
 | DELETE | `/api/applications/:id` | Delete an application    |
 | GET    | `/api/companies`        | List companies           |
 | GET    | `/api/statuses`         | List statuses            |
+| GET    | `/api/reports/applications` | Filtered report with totals |
+
+### `GET /api/reports/applications`
+
+All query parameters are optional; omitting them returns every application.
+
+| Parameter    | Format       | Purpose                              |
+| ------------ | ------------ | ------------------------------------ |
+| `company_id` | positive int | Only this company                    |
+| `status_id`  | positive int | Only this status                     |
+| `start_date` | `YYYY-MM-DD` | On or after this date (inclusive)    |
+| `end_date`   | `YYYY-MM-DD` | On or before this date (inclusive)   |
+
+Returns `total` (number of matches), `by_status` (counts per status, only
+for statuses with matches), and `applications` (the matching rows).
