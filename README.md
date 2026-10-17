@@ -95,3 +95,23 @@ All query parameters are optional; omitting them returns every application.
 
 Returns `total` (number of matches), `by_status` (counts per status, only
 for statuses with matches), and `applications` (the matching rows).
+
+## Database Design
+
+The database contains three tables. Complete definitions are in
+`server/schema.sql`.
+
+| Table | Purpose | Primary Key | Foreign Keys |
+| --- | --- | --- | --- |
+| companies | Stores company names and industries | company_id | None |
+| statuses | Stores application status names | status_id | None |
+| applications | Stores internship application details | application_id | company_id → companies.company_id; status_id → statuses.status_id |
+
+Each application belongs to one company and has one current status.
+A company or status can be associated with many applications.
+
+Company and status names are unique. Keeping them in separate tables
+avoids repeating their descriptive information in each application.
+Foreign keys ensure applications reference existing companies and statuses.
+
+Company and status dropdowns are populated dynamically from these tables.
