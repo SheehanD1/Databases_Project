@@ -1,4 +1,4 @@
-# CS348 Project — Internship Application Tracker
+# CS348 Project: Internship Application Tracker
 
 Track internship applications with a React frontend, an Express API, and a MySQL database.
 
@@ -21,7 +21,7 @@ mysql -u root -p < server/schema.sql
 mysql -u root -p < server/seed.sql
 ```
 
-Windows (PowerShell) — `<` redirection is not supported, so use `SOURCE`
+Windows (PowerShell): `<` redirection is not supported, so use `SOURCE`
 from inside the MySQL client. The installer does not add `mysql` to PATH,
 so call it by full path:
 
@@ -105,7 +105,7 @@ The database contains three tables. Complete definitions are in
 | --- | --- | --- | --- |
 | companies | Stores company names and industries | company_id | None |
 | statuses | Stores application status names | status_id | None |
-| applications | Stores internship application details | application_id | company_id → companies.company_id; status_id → statuses.status_id |
+| applications | Stores internship application details | application_id | company_id references companies.company_id; status_id references statuses.status_id |
 
 Each application belongs to one company and has one current status.
 A company or status can be associated with many applications.

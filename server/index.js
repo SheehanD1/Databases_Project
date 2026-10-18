@@ -81,7 +81,7 @@ app.post('/api/applications', async (req, res) => {
     role_title.trim().length > 150
   ) {
     return res.status(400).json({
-      error: 'Provide a valid company, status, and role title (1–150 characters).'
+      error: 'Provide a valid company, status, and role title (1-150 characters).'
     });
   }
 
@@ -190,7 +190,7 @@ app.put('/api/applications/:id', async (req, res) => {
     role_title.trim().length > 150
   ) {
     return res.status(400).json({
-      error: 'Provide a valid company, status, and role title (1–150 characters).'
+      error: 'Provide a valid company, status, and role title (1-150 characters).'
     });
   }
 

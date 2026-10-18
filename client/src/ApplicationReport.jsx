@@ -257,7 +257,7 @@ export default function ApplicationReport({ refreshKey }) {
                         <tr key={application.application_id}>
                           <td>{application.company}</td>
                           <td>{application.role_title}</td>
-                          <td>{application.location || '—'}</td>
+                          <td>{application.location || '-'}</td>
                           <td>{application.status}</td>
                           <td>{application.application_date}</td>
                         </tr>
